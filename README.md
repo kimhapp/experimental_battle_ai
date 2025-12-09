@@ -1,3 +1,3 @@
 # experimental_battle_ai
 
-A new Flutter project.
+Showcasing the AI of the enemy in my game project called Experimental Battle.
