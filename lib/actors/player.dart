@@ -116,7 +116,7 @@ class Player extends Actor {
       PlayerState.roll: rollAnimation
     };
     
-    setState(PlayerState.idle);
+    setAnimation(PlayerState.idle);
   }
 
   @override
@@ -145,7 +145,7 @@ class Player extends Actor {
   
   @override
   void die({Actor? killer}) {
-    setState(PlayerState.die);
+    setAnimation(PlayerState.die);
     animationTickers![PlayerState.die]!.onStart = () {
       isDying = true;
     };
@@ -168,16 +168,16 @@ class Player extends Actor {
   
   @override
   void idle() {
-    setState(PlayerState.idle);
+    setAnimation(PlayerState.idle);
     isMoving = false;
   }
   
   @override
   void move(double dt) {
     if (isSlow) {
-      setState(PlayerState.slowWalk);
+      setAnimation(PlayerState.slowWalk);
     } else {
-      setState(PlayerState.run);
+      setAnimation(PlayerState.run);
     }
 
     direction = moveJoystick.relativeDelta;
@@ -186,7 +186,7 @@ class Player extends Actor {
 
   void roll(double dt) {
     if (current != PlayerState.roll) {
-      setState(PlayerState.roll);
+      setAnimation(PlayerState.roll);
       animationTickers![PlayerState.roll]!.onStart = () {
         isRolling = true;
         isInvicinble = true;

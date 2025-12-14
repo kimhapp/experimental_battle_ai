@@ -1,0 +1,64 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "arena.tmx",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "file.lastUsedOpenFilter": "All Files (*)",
+    "fileStates": {
+        "Decorations.tsx": {
+            "scaleInDock": 1.5,
+            "scaleInEditor": 1
+        },
+        "Tileset.tsx": {
+            "scaleInDock": 1.5,
+            "scaleInEditor": 2
+        },
+        "arena..tmx": {
+            "scale": 0.4416015625,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 511.77355152587353,
+                "y": 511.7735515258735
+            }
+        },
+        "arena.tmx": {
+            "scale": 0.75,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 834.6666666666666,
+                "y": 419.99999999999994
+            }
+        }
+    },
+    "last.exportedFilePath": "C:/Users/Potato/experimental_battle/assets/tiles",
+    "last.externalTilesetPath": "C:/Users/Potato/experimental_battle/assets/tiles",
+    "last.imagePath": "C:/Users/Potato/experimental_battle/assets/images/terrains",
+    "map.fixedSize": false,
+    "map.lastUsedExportFilter": "All Files (*)",
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 16,
+    "map.tileWidth": 16,
+    "openFiles": [
+        "arena.tmx",
+        "Tileset.tsx",
+        "Decorations.tsx"
+    ],
+    "project": "experimental_battle.tiled-project",
+    "recentFiles": [
+        "Decorations.tsx",
+        "Tileset.tsx",
+        "arena.tmx",
+        "arena..tmx"
+    ],
+    "resizeMap.removeObjects": true,
+    "tileset.lastUsedFilter": "Tiled tileset files (*.tsx *.xml)",
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.tileSize": {
+        "height": 16,
+        "width": 16
+    }
+}

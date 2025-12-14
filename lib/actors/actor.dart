@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:nativewrappers/_internal/vm/lib/ffi_allocation_patch.dart';
 
 import 'package:flame/components.dart';
 import 'package:flutter/foundation.dart';
@@ -29,6 +30,10 @@ abstract class Actor<T> extends SpriteAnimationGroupComponent with HasGameRefere
   double attackSpeed = 0.0;
   double projectileSpeed = 0.0;
   double finalMultiplier = 1.0;
+
+  Map<String, State> states = {};
+  String? currentState;
+  String? previousState;
 
   @override
   void onLoad() {
@@ -62,35 +67,58 @@ abstract class Actor<T> extends SpriteAnimationGroupComponent with HasGameRefere
     return (1 + target.percDamageReceived) * dotMultiplier;
   }
 
-  void setState(T state) {
+  void setAnimation(T animation, {VoidCallback? onComplete}) {
     if (animations == null) {
       throw StateError('Animations not loaded yet.');
     }
 
-    if (animations!.containsKey(state)) {
-      current = state;
+    if (animations!.containsKey(animation)) {
+      current = animation;
+
+      final ticker = animationTickers![animation];
+      if (ticker != null && onComplete != null) ticker.onComplete = onComplete;
     } else if (kDebugMode) {
-      throw ArgumentError('State "$state" not found in animations. '
+      throw ArgumentError('State "$animation" not found in animations. '
           'Available: ${animations!.keys.join(", ")}');
     } else {
-      debugPrint('Actor: State $state not available, using ${animations!.keys.first}');
+      debugPrint('Actor: State $animation not available, using ${animations!.keys.first}');
       current = animations!.keys.first;
     }
   }
 
-  void idle();
-  void move(double dt);
-  void attack();
-  void die({Actor? killer});
-  void hurt({Actor? source});
-
   void changeHealth(double amount, {Actor? source}) {
     health = (health + amount).clamp(0, maxHealth);
-    if (amount < 0 && health > 0) hurt(source: source);
+    if (amount < 0 && health > 0) setState('hurt');
     
-    if (health <= 0) die(killer: source);
+    if (health <= 0) setState('dead');
   }
   
   void loadAnimations();
+  void registerStates(String name, {VoidCallback? onEnter, VoidCallback? onExit}) {
+    states[name] = State(name, onEnter: onEnter, onExit: onExit);
+  }
+  void setState(String newState) {
+    final previous = states[currentState];
+    final next = states[newState];
+
+    if (next == null && kDebugMode) {
+      throw ArgumentError('State "$newState" not found in states. '
+          'Available: ${states.keys.join(", ")}');
+    }
+
+    previous!.onExit.call();
+    previousState = previous.name;
+
+    next!.onEnter.call();
+    currentState = newState;
+  }
   void updateState(double dt);
+}
+
+class State {
+  final String name;
+  final VoidCallback? onEnter;
+  final VoidCallback? onExit;
+  
+  State(this.name, {this.onEnter, this.onExit});
 }

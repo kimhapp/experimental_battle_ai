@@ -17,5 +17,30 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
 
+# The following section is specific to Flutter packages.
 flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
   uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+  assets:
+  # Images
+    - assets/images/terrains/
+    - assets/images/ui/
+    - assets/images/ui/button/
+    - assets/images/icons/
+    - assets/images/hud/
+    - assets/images/hud/button/
+    - assets/images/hud/joystick/
+    - assets/images/actors/player(48x32)/
+
+  # Tiles
+    - assets/tiles/
+
+  fonts:
+    - family: Minecraftia-Regular
+      fonts:
+        - asset: assets/fonts/Minecraftia-Regular.ttf
