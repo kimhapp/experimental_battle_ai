@@ -1,11 +1,12 @@
 import 'package:experimental_battle_ai/actors/actor.dart';
 import 'package:experimental_battle_ai/actors/player.dart';
+import 'package:experimental_battle_ai/actors/state.dart';
 
 enum EnemyType { minion, elite, boss }
 
 // !!! INITIALIZE THE ENEMY ID AND TYPE THROUGH ENEMYTEMPLATE TO AVOID REPEATED ID ASSIGNMENT! !!!
 enum EnemyTemplate {
-  goblin(1, EnemyType.minion);
+  flyingEye(1, EnemyType.minion);
 
   const EnemyTemplate(this.id, this.type);
   final int id;
@@ -34,6 +35,8 @@ abstract class Enemy extends Actor {
   static int getCountForType(EnemyType type) => _typeCounts[type] ?? 0;
   bool get canSpawn => _enemyCounts[template.id]! < maxEnemyCount;
 
+  final State follow = State('follow');
+  
   @override
   void onRemove() {
     super.onRemove();

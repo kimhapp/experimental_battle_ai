@@ -2,10 +2,11 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:experimental_battle_ai/actors/actor.dart';
+import 'package:experimental_battle_ai/actors/state.dart';
 import 'package:experimental_battle_ai/experimental_battle.dart';
 import 'package:flame/components.dart';
 
-enum PlayerState { idle, roll, slowWalk, run, die }
+enum PlayerAnimation { idle, roll, slowWalk, run, die }
 
 class Player extends Actor {
   Player({required this.moveJoystick, required this.aimJoystick});
@@ -24,9 +25,9 @@ class Player extends Actor {
   Vector2 cursorFlippedOffset= Vector2.zero();
   double cursorAngle = 0.0;
   Vector2 cursorDirection = Vector2.zero();
+  bool isFlipped = false;
 
   double rollSpeed = 350;
-  Vector2 direction = Vector2(1, 0); // Default direction
 
   bool get isSlow => speed < 200;
   bool isStunned = false;
@@ -40,6 +41,9 @@ class Player extends Actor {
   bool isMoving = false;
   bool get canMove => !isStunned && !isRooted && !isRolling && !isDying;
   bool get canAttack => !isStunned && !isAttacking && !isSwitchingWeapon && !isDying;
+
+  late final State move;
+  late final State roll;
 
   @override
   void onLoad() {
@@ -109,20 +113,71 @@ class Player extends Actor {
     );
 
     animations = {
-      PlayerState.idle: idleAnimation,
-      PlayerState.run: runAnimation,
-      PlayerState.die: deathAnimation,
-      PlayerState.slowWalk: slowWalkAnimation,
-      PlayerState.roll: rollAnimation
+      PlayerAnimation.idle: idleAnimation,
+      PlayerAnimation.run: runAnimation,
+      PlayerAnimation.die: deathAnimation,
+      PlayerAnimation.slowWalk: slowWalkAnimation,
+      PlayerAnimation.roll: rollAnimation
     };
     
-    setAnimation(PlayerState.idle);
+    setAnimation(PlayerAnimation.idle);
+  }
+
+  @override
+  void loadStates() {
+    idle
+    ..onEnter = () {
+      setAnimation(PlayerAnimation.idle);
+      isMoving = false;
+    }
+    ..onUpdate = (dt) => direction = isFlipped ? Vector2(-1,0) : Vector2(1, 0);
+
+    move = State('move', 
+      onEnter: () {
+        if (isSlow) {
+          setAnimation(PlayerAnimation.slowWalk);
+        } else {
+          setAnimation(PlayerAnimation.run);
+        }
+      },
+      onUpdate: (dt) {
+        direction = moveJoystick.relativeDelta.normalized();
+        velocity = direction * speed;
+        position.add(velocity * dt);
+      },
+    );
+
+    roll = State('roll',
+      onEnter: () {
+        setAnimation(PlayerAnimation.roll, 
+          onStart: () {
+            isRolling = true;
+            isInvicinble = true;
+          },
+
+          onComplete: () {
+            isRolling = false;
+          },
+        );
+      },
+      onUpdate: (dt) => position.add(direction * rollSpeed * dt),
+      onExit: () => isInvicinble = false
+    );
+
+    hurt.onEnter = () => isHurt = true;
+
+    death.onEnter = () {
+      setAnimation(PlayerAnimation.die,
+        onStart: () => isDying = true,
+        onComplete: () => isDying = false
+      );
+    };
   }
 
   @override
   void update(double dt) {
     super.update(dt);
-    updateState(dt);
+    updatePlayerControl();
     updateCursorPosition();
   }
 
@@ -134,80 +189,24 @@ class Player extends Actor {
     canvas.save();
 
     if (cursorDirection.x < 0) {
+      if (!isFlipped) isFlipped = true;
       canvas.translate(size.x / 2, size.y / 2);
       canvas.scale(-1, 1);
       canvas.translate(-size.x / 2, -size.y / 2);
-    } 
+    } else {
+      if (isFlipped) isFlipped = false;
+    }
     
     super.render(canvas);
     canvas.restore();
   }
   
-  @override
-  void die({Actor? killer}) {
-    setAnimation(PlayerState.die);
-    animationTickers![PlayerState.die]!.onStart = () {
-      isDying = true;
-    };
-    animationTickers![PlayerState.die]!.onComplete = () {
-      isDying = false;
-    };
-  }
-
-  @override
-  void attack({Actor? killer}) {
-    if (!canAttack) return;
-
-    
-  }
-  
-  @override
-  void hurt({Actor? source}) {
-    isHurt = true;
-  }
-  
-  @override
-  void idle() {
-    setAnimation(PlayerState.idle);
-    isMoving = false;
-  }
-  
-  @override
-  void move(double dt) {
-    if (isSlow) {
-      setAnimation(PlayerState.slowWalk);
-    } else {
-      setAnimation(PlayerState.run);
-    }
-
-    direction = moveJoystick.relativeDelta;
-    position.add(direction * speed * dt);
-  }
-
-  void roll(double dt) {
-    if (current != PlayerState.roll) {
-      setAnimation(PlayerState.roll);
-      animationTickers![PlayerState.roll]!.onStart = () {
-        isRolling = true;
-        isInvicinble = true;
-      };
-
-      animationTickers![PlayerState.roll]!.onComplete = () {
-        isRolling = false;
-        isInvicinble = false;
-      };
-    }
-
-    position.add(direction * rollSpeed * dt);
-  }
-
-  @override
-  void updateState(double dt) {
-    if (isDying) return die();
-    if (isHurt && !isDying) return hurt();
-    if (game.gameHud.isRollPressed || isRolling) return roll(dt);
-    if (moveJoystick.direction != JoystickDirection.idle && canMove) return move(dt);
-    return idle();
+  void updatePlayerControl() {
+    if (isDying) return setState(death);
+    if (isHurt && !isDying) return setState(hurt);
+    if (game.gameHud.isRollPressed || !canMove) return setState(roll);
+    if (moveJoystick.direction != JoystickDirection.idle && canMove) return setState(move);
+    setState(idle);
   }
 
   void updateCursorPosition() {

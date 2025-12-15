@@ -1,6 +1,6 @@
 import 'dart:math';
-import 'dart:nativewrappers/_internal/vm/lib/ffi_allocation_patch.dart';
 
+import 'package:experimental_battle_ai/actors/state.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/foundation.dart';
 import '../experimental_battle.dart';
@@ -31,14 +31,21 @@ abstract class Actor<T> extends SpriteAnimationGroupComponent with HasGameRefere
   double projectileSpeed = 0.0;
   double finalMultiplier = 1.0;
 
-  Map<String, State> states = {};
-  String? currentState;
-  String? previousState;
+  Vector2 velocity = Vector2.zero();
+  Vector2 direction = Vector2(1, 0); // Default Direction
+
+  final State idle = State('idle');
+  final State hurt = State('hurt');
+  final State death = State('death');
+  State? currentState;
+  State? previousState;
 
   @override
   void onLoad() {
     anchor = Anchor.center;
     loadAnimations();
+    loadStates();
+    setState(idle);
   }
 
   // Multipliers are modified by the activator and can use any stats to scale freely
@@ -67,7 +74,20 @@ abstract class Actor<T> extends SpriteAnimationGroupComponent with HasGameRefere
     return (1 + target.percDamageReceived) * dotMultiplier;
   }
 
-  void setAnimation(T animation, {VoidCallback? onComplete}) {
+  @override
+  void update(double dt) {
+    super.update(dt);
+    currentState!.onUpdate?.call(dt);
+  }
+
+  void setAnimation(
+    T animation, 
+    {
+      VoidCallback? onStart,
+      Map<int, VoidCallback>? onFrames,
+      VoidCallback? onComplete,
+    }
+  ) {
     if (animations == null) {
       throw StateError('Animations not loaded yet.');
     }
@@ -76,7 +96,18 @@ abstract class Actor<T> extends SpriteAnimationGroupComponent with HasGameRefere
       current = animation;
 
       final ticker = animationTickers![animation];
-      if (ticker != null && onComplete != null) ticker.onComplete = onComplete;
+      if (ticker != null) {
+        if (onStart != null) ticker.onStart = onStart;
+        if (onFrames != null) {
+          ticker.onFrame = (int frameNumber) {
+            final callback = onFrames[frameNumber];
+            if (callback != null) {
+              callback();
+            }
+          };
+        }
+        if (onComplete != null) ticker.onComplete = onComplete;
+      }
     } else if (kDebugMode) {
       throw ArgumentError('State "$animation" not found in animations. '
           'Available: ${animations!.keys.join(", ")}');
@@ -88,37 +119,24 @@ abstract class Actor<T> extends SpriteAnimationGroupComponent with HasGameRefere
 
   void changeHealth(double amount, {Actor? source}) {
     health = (health + amount).clamp(0, maxHealth);
-    if (amount < 0 && health > 0) setState('hurt');
+    if (amount < 0 && health > 0) setState(hurt);
     
-    if (health <= 0) setState('dead');
+    if (health <= 0) setState(hurt);
   }
   
   void loadAnimations();
-  void registerStates(String name, {VoidCallback? onEnter, VoidCallback? onExit}) {
-    states[name] = State(name, onEnter: onEnter, onExit: onExit);
-  }
-  void setState(String newState) {
-    final previous = states[currentState];
-    final next = states[newState];
+  void loadStates();
 
-    if (next == null && kDebugMode) {
-      throw ArgumentError('State "$newState" not found in states. '
-          'Available: ${states.keys.join(", ")}');
-    }
+  void setState(State newState) {
+    if (currentState == newState) return;
 
-    previous!.onExit.call();
-    previousState = previous.name;
+    final previous = currentState;
+    final next = newState;
 
-    next!.onEnter.call();
+    previous!.onExit?.call();
+    previousState = previous;
+
+    next.onEnter?.call();
     currentState = newState;
   }
-  void updateState(double dt);
-}
-
-class State {
-  final String name;
-  final VoidCallback? onEnter;
-  final VoidCallback? onExit;
-  
-  State(this.name, {this.onEnter, this.onExit});
 }

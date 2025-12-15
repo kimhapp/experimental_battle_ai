@@ -36,6 +36,7 @@ flutter:
     - assets/images/hud/button/
     - assets/images/hud/joystick/
     - assets/images/actors/player(48x32)/
+    - assets/images/actors/enemies/minions/flying_eye(150x150)/
 
   # Tiles
     - assets/tiles/
