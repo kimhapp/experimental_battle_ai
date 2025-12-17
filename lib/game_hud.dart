@@ -1,9 +1,10 @@
 import 'package:experimental_battle_ai/experimental_battle.dart';
 import 'package:flame/components.dart';
+import 'package:flame/events.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 
-class GameHud extends PositionComponent with HasGameReference<ExperimentalBattle> {
+class GameHud extends PositionComponent with HasGameReference<ExperimentalBattle>, DragCallbacks {
   GameHud();
 
   late final JoystickComponent moveJoystick;

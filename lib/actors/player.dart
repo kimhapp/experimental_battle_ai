@@ -4,9 +4,10 @@ import 'dart:ui';
 import 'package:experimental_battle_ai/actors/actor.dart';
 import 'package:experimental_battle_ai/actors/state.dart';
 import 'package:experimental_battle_ai/experimental_battle.dart';
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 
-enum PlayerAnimation { idle, roll, slowWalk, run, die }
+enum PlayerAnimationState { idle, roll, slowWalk, run, die }
 
 class Player extends Actor {
   Player({required this.moveJoystick, required this.aimJoystick});
@@ -45,15 +46,24 @@ class Player extends Actor {
   late final State move;
   late final State roll;
 
+  late final RectangleHitbox hitbox;
+
   @override
   void onLoad() {
     super.onLoad();
+    scale = Vector2.all(1.5);
     cursor = SpriteComponent(
       sprite: Sprite(game.images.fromCache("hud/cursor.png")),
       anchor: Anchor.center,
       position: Vector2(size.x / 2, size.y / 2) + Vector2(size.x / 2, 0)
     );
+    hitbox = RectangleHitbox(
+      size: Vector2(16, 29),
+      anchor: anchor,
+      position: Vector2(((size.x) * 1.5) / 2, ((size.y) * 1.5) / 2) 
+    );
     add(cursor);
+    add(hitbox);
   }
 
   @override
@@ -61,7 +71,6 @@ class Player extends Actor {
     super.onMount();
     maxHealth = 10;
     speed = 190;
-    scale = Vector2.all(1.5);
   }
   
   @override
@@ -113,21 +122,19 @@ class Player extends Actor {
     );
 
     animations = {
-      PlayerAnimation.idle: idleAnimation,
-      PlayerAnimation.run: runAnimation,
-      PlayerAnimation.die: deathAnimation,
-      PlayerAnimation.slowWalk: slowWalkAnimation,
-      PlayerAnimation.roll: rollAnimation
+      PlayerAnimationState.idle: idleAnimation,
+      PlayerAnimationState.run: runAnimation,
+      PlayerAnimationState.die: deathAnimation,
+      PlayerAnimationState.slowWalk: slowWalkAnimation,
+      PlayerAnimationState.roll: rollAnimation
     };
-    
-    setAnimation(PlayerAnimation.idle);
   }
 
   @override
   void loadStates() {
     idle
     ..onEnter = () {
-      setAnimation(PlayerAnimation.idle);
+      setAnimationState(PlayerAnimationState.idle);
       isMoving = false;
     }
     ..onUpdate = (dt) => direction = isFlipped ? Vector2(-1,0) : Vector2(1, 0);
@@ -135,9 +142,9 @@ class Player extends Actor {
     move = State('move', 
       onEnter: () {
         if (isSlow) {
-          setAnimation(PlayerAnimation.slowWalk);
+          setAnimationState(PlayerAnimationState.slowWalk);
         } else {
-          setAnimation(PlayerAnimation.run);
+          setAnimationState(PlayerAnimationState.run);
         }
       },
       onUpdate: (dt) {
@@ -149,7 +156,7 @@ class Player extends Actor {
 
     roll = State('roll',
       onEnter: () {
-        setAnimation(PlayerAnimation.roll, 
+        setAnimationState(PlayerAnimationState.roll, 
           onStart: () {
             isRolling = true;
             isInvicinble = true;
@@ -167,7 +174,7 @@ class Player extends Actor {
     hurt.onEnter = () => isHurt = true;
 
     death.onEnter = () {
-      setAnimation(PlayerAnimation.die,
+      setAnimationState(PlayerAnimationState.die,
         onStart: () => isDying = true,
         onComplete: () => isDying = false
       );
@@ -225,5 +232,10 @@ class Player extends Actor {
         cursor.position = Vector2(size.x / 2, size.y / 2) + cursorOffset;
       }
     }
+  }
+  
+  @override
+  void onCollideWithHitbox(Set<Vector2> intersectionPoints, PositionComponent other) {
+
   }
 }

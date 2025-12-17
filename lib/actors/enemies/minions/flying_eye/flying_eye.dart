@@ -1,9 +1,10 @@
 import 'package:experimental_battle_ai/actors/enemies/enemy.dart';
 import 'package:experimental_battle_ai/actors/state.dart';
 import 'package:experimental_battle_ai/experimental_battle.dart';
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 
-enum FlyingEyeAnimation { flight, bite, dash, heal, hurt, death }
+enum FlyingEyeAnimationState { flight, bite, dash, heal, hurt, death }
 
 class FlyingEye extends Enemy {
   FlyingEye({required super.player}) : super(
@@ -22,9 +23,22 @@ class FlyingEye extends Enemy {
   late final State dash;
   late final State heal;
 
+  bool _biteLeap = false;
+
+  final CircleHitbox biteRange = CircleHitbox(
+    radius: 20,
+    anchor: Anchor.center
+  );
+
+  @override
+  void onLoad() {
+    super.onLoad();
+  }
+
   @override
   void onMount() {
     super.onMount();
+    setState(follow);
     speed = 200;
   }
 
@@ -88,28 +102,81 @@ class FlyingEye extends Enemy {
         loop: false
       )
     );
+
+    animations = {
+      FlyingEyeAnimationState.flight: flightAnimation,
+      FlyingEyeAnimationState.bite: biteAnimation,
+      FlyingEyeAnimationState.dash: dashAnimation,
+      FlyingEyeAnimationState.heal: healAnimation,
+      FlyingEyeAnimationState.hurt: hurtAnimation,
+      FlyingEyeAnimationState.death: deathAnimation,
+    };
   }
 
   @override
   void loadStates() {
-    idle.onEnter = () {
-      if (current != FlyingEyeAnimation.flight) setAnimation(FlyingEyeAnimation.flight);
-    };
+    idle
+    ..onEnter = () {
+      if (current != FlyingEyeAnimationState.flight) setAnimationState(FlyingEyeAnimationState.flight);
+      if (stateCountdown != null) stateCountdown!.start();
+    }
+    ..onUpdate = (dt) {
+      if (stateCountdown != null) {
+        stateCountdown!.update(dt);
+        if (stateCountdown!.finished) setState(follow);
+      }
+    }
+    ..onExit = () => stateCountdown = null;
 
     follow
     ..onEnter = () {
-      if (current != FlyingEyeAnimation.flight) setAnimation(FlyingEyeAnimation.flight);
+      if (current != FlyingEyeAnimationState.flight) setAnimationState(FlyingEyeAnimationState.flight);
     }
     ..onUpdate = (dt) {
-       direction = (player.position - position).normalized();
-       if (direction.x > 0) {
-        if (isFlippedHorizontally) flipHorizontally();
-       } else if (direction.x < 0) {
-        if (!isFlippedHorizontally) flipHorizontally();
-       }
+      direction = (player.position - position).normalized();
+      if (direction.x > 0) {
+       if (isFlippedHorizontally) flipHorizontally();
+      } else if (direction.x < 0) {
+       if (!isFlippedHorizontally) flipHorizontally();
+      }
 
-       velocity = direction * speed;
-       position.add(velocity * dt);
+      velocity = direction * speed;
+      position.add(velocity * dt);
     };
+
+    bite = State('bite',
+      onEnter: () {
+        setAnimationState(FlyingEyeAnimationState.bite,
+          onFrames: {
+            4: () => _biteLeap = true
+          },
+          onComplete: () {
+            _biteLeap = false;
+            setState(idle);
+          }
+        );
+      },
+      onUpdate: (dt) {
+        if (_biteLeap) {
+          final leapSpeed = speed * 2.0;
+          final leapVelocity = direction * leapSpeed;
+          position.add(leapVelocity * dt);
+        }
+      },
+      onExit: () => stateCountdown = Timer(0.5)
+    );
+  }
+
+  @override
+  void onCollideWithHitbox(Set<Vector2> intersectionPoints, PositionComponent other) {
+    
+  }
+
+  void onBiteRange(Set<Vector2> intersectionPoints, PositionComponent other) {
+    if (currentState != follow) return;
+
+    if (other == player) {
+      setState(bite);
+    }
   }
 }

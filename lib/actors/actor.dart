@@ -1,11 +1,12 @@
 import 'dart:math';
 
 import 'package:experimental_battle_ai/actors/state.dart';
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/foundation.dart';
 import '../experimental_battle.dart';
 
-abstract class Actor<T> extends SpriteAnimationGroupComponent with HasGameReference<ExperimentalBattle> {
+abstract class Actor<T> extends SpriteAnimationGroupComponent with HasGameReference<ExperimentalBattle>, CollisionCallbacks {
   // Stats
   // Any stats, that are not specified with percentage, are considered as flat values
   double maxHealth = 0.0;
@@ -40,14 +41,6 @@ abstract class Actor<T> extends SpriteAnimationGroupComponent with HasGameRefere
   State? currentState;
   State? previousState;
 
-  @override
-  void onLoad() {
-    anchor = Anchor.center;
-    loadAnimations();
-    loadStates();
-    setState(idle);
-  }
-
   // Multipliers are modified by the activator and can use any stats to scale freely
   // Damage Formula
   double calculateDamageAmount(Actor target, double attackMultiplier) {
@@ -75,12 +68,28 @@ abstract class Actor<T> extends SpriteAnimationGroupComponent with HasGameRefere
   }
 
   @override
+  @mustCallSuper
+  void onLoad() {
+    super.onLoad();
+    loadAnimations();
+    loadStates();
+  }
+
+  @override
+  @mustCallSuper
+  void onMount() {
+    super.onMount();
+    anchor = Anchor.center;
+    setState(idle);
+  }
+
+  @override
   void update(double dt) {
     super.update(dt);
     currentState!.onUpdate?.call(dt);
   }
 
-  void setAnimation(
+  void setAnimationState(
     T animation, 
     {
       VoidCallback? onStart,
@@ -133,10 +142,14 @@ abstract class Actor<T> extends SpriteAnimationGroupComponent with HasGameRefere
     final previous = currentState;
     final next = newState;
 
-    previous!.onExit?.call();
-    previousState = previous;
+    if (previous != null) {
+      previous.onExit?.call();
+      previousState = previous;
+    }
 
     next.onEnter?.call();
     currentState = newState;
   }
+
+  void onCollideWithHitbox(Set<Vector2> intersectionPoints, PositionComponent other);
 }

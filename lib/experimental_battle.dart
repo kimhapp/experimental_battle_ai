@@ -1,11 +1,11 @@
+import 'package:experimental_battle_ai/actors/enemies/minions/flying_eye/flying_eye.dart';
 import 'package:experimental_battle_ai/actors/player.dart';
 import 'package:experimental_battle_ai/game_hud.dart';
 import 'package:flame/components.dart';
-import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flame_tiled/flame_tiled.dart';
 
-class ExperimentalBattle extends FlameGame with DragCallbacks {
+class ExperimentalBattle extends FlameGame with HasCollisionDetection {
   final double width = 640;
   final double height = 360;
   final GameHud gameHud = GameHud();
@@ -84,6 +84,7 @@ class GameWorld extends World with HasGameReference<ExperimentalBattle> {
         '- Tileset images not found or paths incorrect in TMX file'
       );
     }
+    debugMode = true;
   }
 
   void _spawningObjects() {
@@ -94,6 +95,8 @@ class GameWorld extends World with HasGameReference<ExperimentalBattle> {
         switch (spawnPoint.class_) {
           case "player":
             player.position = spawnPoint.position;
+            FlyingEye flyingEye = FlyingEye(player: player)..position = player.position - Vector2.all(100);
+            add(flyingEye);
             add(player);
             break;
         }
