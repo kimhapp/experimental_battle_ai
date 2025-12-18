@@ -34,6 +34,7 @@ abstract class Actor<T> extends SpriteAnimationGroupComponent with HasGameRefere
 
   Vector2 velocity = Vector2.zero();
   Vector2 direction = Vector2(1, 0); // Default Direction
+  late final RectangleHitbox hitbox;
 
   final State idle = State('idle');
   final State hurt = State('hurt');
@@ -71,15 +72,9 @@ abstract class Actor<T> extends SpriteAnimationGroupComponent with HasGameRefere
   @mustCallSuper
   void onLoad() {
     super.onLoad();
+    anchor = Anchor.center;
     loadAnimations();
     loadStates();
-  }
-
-  @override
-  @mustCallSuper
-  void onMount() {
-    super.onMount();
-    anchor = Anchor.center;
     setState(idle);
   }
 

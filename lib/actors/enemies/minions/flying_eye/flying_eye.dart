@@ -24,15 +24,28 @@ class FlyingEye extends Enemy {
   late final State heal;
 
   bool _biteLeap = false;
+  bool _dash = false;
 
-  final CircleHitbox biteRange = CircleHitbox(
-    radius: 20,
-    anchor: Anchor.center
-  );
+  double biteDistance = 50;
+  double biteDistanceMultiplier = 2;
+  
+  double dashDistance = 200;
+  double dashDistanceMultiplier = 2;
+
+  Timer dashCooldown = Timer(6, autoStart: false);
+  Timer healCooldown = Timer(10, autoStart: false);
+  Timer attackCooldown = Timer(4, autoStart: false);
 
   @override
   void onLoad() {
     super.onLoad();
+    hitbox = RectangleHitbox(
+      size: Vector2(45, 45),
+      anchor: anchor,
+      position: size / 2
+    )..onCollisionStartCallback = onCollideWithHitbox;
+
+    add(hitbox);
   }
 
   @override
@@ -40,6 +53,15 @@ class FlyingEye extends Enemy {
     super.onMount();
     setState(follow);
     speed = 200;
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+
+    attackCooldown.update(dt);
+    dashCooldown.update(dt);
+    healCooldown.update(dt);
   }
 
   @override
@@ -118,7 +140,6 @@ class FlyingEye extends Enemy {
     idle
     ..onEnter = () {
       if (current != FlyingEyeAnimationState.flight) setAnimationState(FlyingEyeAnimationState.flight);
-      if (stateCountdown != null) stateCountdown!.start();
     }
     ..onUpdate = (dt) {
       if (stateCountdown != null) {
@@ -142,13 +163,22 @@ class FlyingEye extends Enemy {
 
       velocity = direction * speed;
       position.add(velocity * dt);
+
+      if (distance(player) < biteDistance) {
+        setState(bite);
+        return;
+      }
+      if (attackCooldown.finished) {
+        if (dashCooldown.finished) return setState(dash);
+        if (healCooldown.finished) return setState(heal);
+      }
     };
 
     bite = State('bite',
       onEnter: () {
         setAnimationState(FlyingEyeAnimationState.bite,
           onFrames: {
-            4: () => _biteLeap = true
+            6: () => _biteLeap = true
           },
           onComplete: () {
             _biteLeap = false;
@@ -158,25 +188,46 @@ class FlyingEye extends Enemy {
       },
       onUpdate: (dt) {
         if (_biteLeap) {
-          final leapSpeed = speed * 2.0;
-          final leapVelocity = direction * leapSpeed;
-          position.add(leapVelocity * dt);
+          velocity = direction * biteDistance * biteDistanceMultiplier;
+          position.add(velocity * dt);
         }
       },
-      onExit: () => stateCountdown = Timer(0.5)
+      onExit: () { 
+        stateCountdown = Timer(1);
+      }
+    );
+
+    dash = State('dash',
+      onEnter: () {
+        setAnimationState(FlyingEyeAnimationState.dash,
+          onFrames: {
+            5: () => _dash = true
+          },
+          onComplete: () {
+            _dash = false;
+            setState(idle);
+          }
+        );
+      },
+      onUpdate: (dt) {
+        if (_dash) {
+          final dashSpeed = dashDistance * dashDistanceMultiplier;
+          final dashVelocity = direction * dashSpeed;
+          position.add(dashVelocity * dt);
+        } else {
+          direction = (player.position - position).normalized();
+        }
+      },
+      onExit: () {
+        attackCooldown.start();
+        dashCooldown.start();
+        stateCountdown = Timer(1);
+      }
     );
   }
 
   @override
   void onCollideWithHitbox(Set<Vector2> intersectionPoints, PositionComponent other) {
     
-  }
-
-  void onBiteRange(Set<Vector2> intersectionPoints, PositionComponent other) {
-    if (currentState != follow) return;
-
-    if (other == player) {
-      setState(bite);
-    }
   }
 }

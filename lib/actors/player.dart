@@ -46,24 +46,21 @@ class Player extends Actor {
   late final State move;
   late final State roll;
 
-  late final RectangleHitbox hitbox;
-
   @override
   void onLoad() {
     super.onLoad();
-    scale = Vector2.all(1.5);
     cursor = SpriteComponent(
       sprite: Sprite(game.images.fromCache("hud/cursor.png")),
-      anchor: Anchor.center,
+      anchor: anchor,
       position: Vector2(size.x / 2, size.y / 2) + Vector2(size.x / 2, 0)
     );
     hitbox = RectangleHitbox(
       size: Vector2(16, 29),
       anchor: anchor,
-      position: Vector2(((size.x) * 1.5) / 2, ((size.y) * 1.5) / 2) 
-    );
-    add(cursor);
-    add(hitbox);
+      position: size / 2
+    )..onCollisionStartCallback = onCollideWithHitbox;
+
+    addAll([cursor, hitbox]);
   }
 
   @override
@@ -71,6 +68,7 @@ class Player extends Actor {
     super.onMount();
     maxHealth = 10;
     speed = 190;
+    scale = Vector2.all(1.5);
   }
   
   @override

@@ -44,7 +44,6 @@ class ExperimentalBattle extends FlameGame with HasCollisionDetection {
     gameHud.addHud();
   }
 
-
   SpriteAnimation createSpriteAnimation(String path, AnimationConfig config) {
     return SpriteAnimation.fromFrameData(
         images.fromCache(path),
@@ -95,7 +94,7 @@ class GameWorld extends World with HasGameReference<ExperimentalBattle> {
         switch (spawnPoint.class_) {
           case "player":
             player.position = spawnPoint.position;
-            FlyingEye flyingEye = FlyingEye(player: player)..position = player.position - Vector2.all(100);
+            FlyingEye flyingEye = FlyingEye(player: player)..position = player.position - Vector2.all(450);
             add(flyingEye);
             add(player);
             break;
