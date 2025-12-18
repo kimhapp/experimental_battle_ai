@@ -11,7 +11,7 @@ class Skull extends SpriteAnimationComponent with HasGameReference<ExperimentalB
   final Player player;
   late final Vector2 direction;
   Vector2 velocity = Vector2.zero();
-  static const double speed = 200;
+  static const double speed = 400;
 
   @override
   void onLoad() {
@@ -33,11 +33,7 @@ class Skull extends SpriteAnimationComponent with HasGameReference<ExperimentalB
   @override
   void onMount() {
     super.onMount();
-    print('player\'s position in skull: ${player.position}');
-    print('position of skull in onMount: $position');
-    direction = (player.position - position).normalized();
-    print('direction: $direction');
-    
+    direction = (player.position - absolutePosition).normalized();
   }
 
   @override
@@ -45,12 +41,10 @@ class Skull extends SpriteAnimationComponent with HasGameReference<ExperimentalB
     super.update(dt);
     velocity = direction * speed;
     position.add(velocity * dt);
-      print('position of skull: $position');
 
-    // if (isOutOfCamera(this)) {
-    //   print("Removed!");
-    //   removeFromParent();
-    // }
+    if (isOutOfCamera(this)) {
+      removeFromParent();
+    }
   }
 
   bool isOutOfCamera(PositionComponent component) {

@@ -135,18 +135,33 @@ class Golem extends Enemy {
     };
 
     shoot = State('shoot',
+      onEnter: () {
+        setAnimationState(GolemAnimationState.shoot);
+      },
     );
 
     shootLaser = State('shoot laser',
+      onEnter: () {
+        setAnimationState(GolemAnimationState.shootLaser);
+      },
     );
 
     melee  = State('melee',
+      onEnter: () {
+        setAnimationState(GolemAnimationState.melee);
+      },
     );
 
     ironBody = State('iron body',
+      onEnter: () {
+        setAnimationState(GolemAnimationState.ironBody);
+      },
     );
 
     stasis = State('stasis',
+      onEnter: () {
+        setAnimationState(GolemAnimationState.stasis);
+      },
     );
 
     hurt.onEnter = () {

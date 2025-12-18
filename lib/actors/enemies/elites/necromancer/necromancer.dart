@@ -1,3 +1,5 @@
+import 'package:experimental_battle_ai/actors/enemies/elites/necromancer/fire_field.dart';
+import 'package:experimental_battle_ai/actors/enemies/elites/necromancer/fire_strike.dart';
 import 'package:experimental_battle_ai/actors/enemies/elites/necromancer/skull.dart';
 import 'package:experimental_battle_ai/actors/enemies/enemy.dart';
 import 'package:experimental_battle_ai/actors/state.dart';
@@ -43,7 +45,7 @@ class Necromancer extends Enemy {
   void onMount() {
     super.onMount();
     speed = 200;
-    setState(shoot);
+    setState(castFromSky);
   }
 
   @override
@@ -79,18 +81,20 @@ class Necromancer extends Enemy {
     castFromGroundAnimation = game.createSpriteAnimation(
       'actors/enemies/elites/necromancer(128x128)/cast_from_ground.png', 
       AnimationConfig(
-        amount: 9, 
+        amount: 13, 
         stepTime: 0.2, 
-        textureSize: Vector2.all(128)
+        textureSize: Vector2.all(128),
+        loop: false
       )
-    );
+    ); // TODO: fix animation
 
     castFromSkyAnimation = game.createSpriteAnimation(
       'actors/enemies/elites/necromancer(128x128)/cast_from_sky.png', 
       AnimationConfig(
-        amount: 9, 
+        amount: 13, 
         stepTime: 0.2, 
-        textureSize: Vector2.all(128)
+        textureSize: Vector2.all(128),
+        loop: true
       )
     );
 
@@ -150,9 +154,8 @@ class Necromancer extends Enemy {
         setAnimationState(NecromancerAnimationState.shoot,
           onFrames: {
             12: () {
-              print("necro's pos: $position");
               add(Skull(
-                position: absolutePosition,
+                position: _skullPoint,
                 player: player
               ));
             }
@@ -162,9 +165,33 @@ class Necromancer extends Enemy {
     );
 
     castFromSky = State('cast from sky',
+      onEnter: () {
+        setAnimationState(NecromancerAnimationState.castFromSky,
+          onFrames: {
+            9: () {
+              add(FireStrike(
+                position: player.position,
+                player: player
+              ));
+            }
+          }
+        );
+      },
     );
 
     castFromGround = State('cast from ground',
+      onEnter: () {
+        setAnimationState(NecromancerAnimationState.castFromGround,
+          onFrames: {
+            9: () {
+              add(FireField(
+                position: size / 2,
+                player: player
+              ));
+            }
+          }
+        );
+      },
     );
 
     hurt.onEnter = () {

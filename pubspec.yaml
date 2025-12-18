@@ -41,6 +41,7 @@ flutter:
     - assets/images/actors/enemies/bosses/golem(100x100)/
     - assets/images/vfx/minions/flying_eye/
     - assets/images/vfx/elites/necromancer/
+    - assets/images/vfx/bosses/golem/
 
   # Tiles
     - assets/tiles/
