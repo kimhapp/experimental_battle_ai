@@ -1,6 +1,8 @@
+import 'package:experimental_battle_ai/actors/enemies/elites/necromancer/skull.dart';
 import 'package:experimental_battle_ai/actors/enemies/enemy.dart';
 import 'package:experimental_battle_ai/actors/state.dart';
 import 'package:experimental_battle_ai/experimental_battle.dart';
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 
 enum NecromancerAnimationState { idle, move, shoot, castFromGround, castFromSky, hurt, death }
@@ -23,10 +25,25 @@ class Necromancer extends Enemy {
   late final State castFromSky;
   late final State castFromGround;
 
+  final Vector2 _skullPoint = Vector2(55, 47); // Based on sprite
+
+  @override
+  void onLoad() {
+    super.onLoad();
+    hitbox = RectangleHitbox(
+      size: Vector2(33, 48),
+      anchor: anchor,
+      position: size / 2
+    )..onCollisionStartCallback = onCollideWithHitbox;
+
+    add(hitbox);
+  }
+
   @override
   void onMount() {
     super.onMount();
     speed = 200;
+    setState(shoot);
   }
 
   @override
@@ -34,7 +51,7 @@ class Necromancer extends Enemy {
     idleAnimation = game.createSpriteAnimation(
       'actors/enemies/elites/necromancer(128x128)/idle.png', 
       AnimationConfig(
-        amount: 9, 
+        amount: 8, 
         stepTime: 0.2, 
         textureSize: Vector2.all(128)
       )
@@ -43,7 +60,7 @@ class Necromancer extends Enemy {
     moveAnimation = game.createSpriteAnimation(
       'actors/enemies/elites/necromancer(128x128)/move.png', 
       AnimationConfig(
-        amount: 9, 
+        amount: 8, 
         stepTime: 0.2, 
         textureSize: Vector2.all(128)
       )
@@ -52,9 +69,10 @@ class Necromancer extends Enemy {
     shootAnimation = game.createSpriteAnimation(
       'actors/enemies/elites/necromancer(128x128)/shoot.png', 
       AnimationConfig(
-        amount: 9, 
-        stepTime: 0.2, 
-        textureSize: Vector2.all(128)
+        amount: 17, 
+        stepTime: 0.1, 
+        textureSize: Vector2.all(128),
+        loop: false
       )
     );
 
@@ -108,30 +126,53 @@ class Necromancer extends Enemy {
   @override
   void loadStates() {
     idle
-    ..onEnter = () {
+    ..onEnter = () { 
       setAnimationState(NecromancerAnimationState.idle);
-      stateCountdown = Timer(2);
     }
     ..onUpdate = (dt) {
-      stateCountdown!.update(dt);
-
-      if (stateCountdown!.finished) setState(follow);
-    };
+      if (stateCountdown != null) {
+        stateCountdown!.update(dt);
+        if (stateCountdown!.finished) setState(follow);
+      }
+    }
+    ..onExit = () => stateCountdown = null;
 
     follow
     ..onEnter = () {
       setAnimationState(NecromancerAnimationState.move);
     }
     ..onUpdate = (dt) {
-       direction = (player.position - position).normalized();
-       if (direction.x > 0) {
-        if (isFlippedHorizontally) flipHorizontally();
-       } else if (direction.x < 0) {
-        if (!isFlippedHorizontally) flipHorizontally();
-       }
+      followMovementUpdate(dt);
+    };
 
-       velocity = direction * speed;
-       position.add(velocity * dt);
+    shoot = State('shoot',
+      onEnter: () {
+        setAnimationState(NecromancerAnimationState.shoot,
+          onFrames: {
+            12: () {
+              print("necro's pos: $position");
+              add(Skull(
+                position: absolutePosition,
+                player: player
+              ));
+            }
+          }
+        );
+      }
+    );
+
+    castFromSky = State('cast from sky',
+    );
+
+    castFromGround = State('cast from ground',
+    );
+
+    hurt.onEnter = () {
+
+    };
+
+    death.onEnter = () {
+      setAnimationState(NecromancerAnimationState.death);
     };
   }
   

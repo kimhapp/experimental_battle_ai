@@ -1,4 +1,4 @@
-import 'package:experimental_battle_ai/actors/enemies/minions/flying_eye/flying_eye.dart';
+import 'package:experimental_battle_ai/actors/enemies/elites/necromancer/necromancer.dart';
 import 'package:experimental_battle_ai/actors/player.dart';
 import 'package:experimental_battle_ai/game_hud.dart';
 import 'package:flame/components.dart';
@@ -94,8 +94,8 @@ class GameWorld extends World with HasGameReference<ExperimentalBattle> {
         switch (spawnPoint.class_) {
           case "player":
             player.position = spawnPoint.position;
-            FlyingEye flyingEye = FlyingEye(player: player)..position = player.position - Vector2.all(450);
-            add(flyingEye);
+            Necromancer necromancer = Necromancer(player: player)..position = player.position - Vector2.all(100);
+            add(necromancer);
             add(player);
             break;
         }

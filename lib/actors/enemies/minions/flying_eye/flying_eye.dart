@@ -1,4 +1,5 @@
 import 'package:experimental_battle_ai/actors/enemies/enemy.dart';
+import 'package:experimental_battle_ai/actors/enemies/minions/flying_eye/heal.dart';
 import 'package:experimental_battle_ai/actors/state.dart';
 import 'package:experimental_battle_ai/experimental_battle.dart';
 import 'package:flame/collisions.dart';
@@ -51,7 +52,7 @@ class FlyingEye extends Enemy {
   @override
   void onMount() {
     super.onMount();
-    setState(follow);
+    setState(idle);
     speed = 200;
   }
 
@@ -69,7 +70,7 @@ class FlyingEye extends Enemy {
     flightAnimation = game.createSpriteAnimation(
       'actors/enemies/minions/flying_eye(150x150)/flight.png', 
       AnimationConfig(
-        amount: 9, 
+        amount: 8, 
         stepTime: 0.2, 
         textureSize: Vector2.all(150)
       )
@@ -137,6 +138,7 @@ class FlyingEye extends Enemy {
 
   @override
   void loadStates() {
+    // TODO: Connect the state 
     idle
     ..onEnter = () {
       if (current != FlyingEyeAnimationState.flight) setAnimationState(FlyingEyeAnimationState.flight);
@@ -154,20 +156,13 @@ class FlyingEye extends Enemy {
       if (current != FlyingEyeAnimationState.flight) setAnimationState(FlyingEyeAnimationState.flight);
     }
     ..onUpdate = (dt) {
-      direction = (player.position - position).normalized();
-      if (direction.x > 0) {
-       if (isFlippedHorizontally) flipHorizontally();
-      } else if (direction.x < 0) {
-       if (!isFlippedHorizontally) flipHorizontally();
-      }
-
-      velocity = direction * speed;
-      position.add(velocity * dt);
-
+      followMovementUpdate(dt);
+      
       if (distance(player) < biteDistance) {
         setState(bite);
         return;
       }
+
       if (attackCooldown.finished) {
         if (dashCooldown.finished) return setState(dash);
         if (healCooldown.finished) return setState(heal);
@@ -223,6 +218,17 @@ class FlyingEye extends Enemy {
         dashCooldown.start();
         stateCountdown = Timer(1);
       }
+    );
+
+    heal = State('heal',
+      onEnter: () {
+        setAnimationState(FlyingEyeAnimationState.heal,
+          onComplete: () {
+            add(HealVisual(position: size / 2));
+            setState(idle);
+          },
+        );
+      },
     );
   }
 

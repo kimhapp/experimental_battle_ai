@@ -48,4 +48,17 @@ abstract class Enemy extends Actor {
     _typeCounts[template.type] = _typeCounts[template.type]! > 0 ? _typeCounts[template.type]! - 1 : 0;
     _enemyCounts[template.id] = _enemyCounts[template.id]! > 0 ? _enemyCounts[template.id]! - 1 : 0;
   }
+
+  void followMovementUpdate(double dt) {
+    direction = (player.position - position).normalized();
+    
+    if (direction.x > 0) {
+      if (isFlippedHorizontally) flipHorizontally();
+    } else if (direction.x < 0) {
+      if (!isFlippedHorizontally) flipHorizontally();
+    }
+
+    velocity = direction * speed;
+    position.add(velocity * dt);
+  }
 }

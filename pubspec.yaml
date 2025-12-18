@@ -39,6 +39,8 @@ flutter:
     - assets/images/actors/enemies/minions/flying_eye(150x150)/
     - assets/images/actors/enemies/elites/necromancer(128x128)/
     - assets/images/actors/enemies/bosses/golem(100x100)/
+    - assets/images/vfx/minions/flying_eye/
+    - assets/images/vfx/elites/necromancer/
 
   # Tiles
     - assets/tiles/
