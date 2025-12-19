@@ -42,6 +42,7 @@ flutter:
     - assets/images/vfx/minions/flying_eye/
     - assets/images/vfx/elites/necromancer/
     - assets/images/vfx/bosses/golem/
+    - assets/images/vfx/player/
 
   # Tiles
     - assets/tiles/

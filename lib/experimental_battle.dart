@@ -1,4 +1,4 @@
-import 'package:experimental_battle_ai/actors/enemies/elites/necromancer/necromancer.dart';
+import 'package:experimental_battle_ai/actors/enemies/bosses/golem/golem.dart';
 import 'package:experimental_battle_ai/actors/player.dart';
 import 'package:experimental_battle_ai/game_hud.dart';
 import 'package:flame/components.dart';
@@ -51,7 +51,8 @@ class ExperimentalBattle extends FlameGame with HasCollisionDetection {
             amount: config.amount,
             stepTime: config.stepTime,
             textureSize: Vector2(config.textureSize.x, config.textureSize.y),
-            loop: config.loop
+            loop: config.loop,
+            amountPerRow: config.amountPerRow
         )
     );
   }
@@ -94,8 +95,8 @@ class GameWorld extends World with HasGameReference<ExperimentalBattle> {
         switch (spawnPoint.class_) {
           case "player":
             player.position = spawnPoint.position;
-            Necromancer necromancer = Necromancer(player: player)..position = player.position - Vector2.all(100);
-            add(necromancer);
+            Golem golem = Golem(player: player)..position = player.position - Vector2.all(100);
+            add(golem);
             add(player);
             break;
         }
@@ -109,11 +110,13 @@ class AnimationConfig {
   final double stepTime;
   final Vector2 textureSize;
   final bool loop;
+  final int? amountPerRow;
 
   const AnimationConfig({
     required this.amount,
     required this.stepTime,
     required this.textureSize,
     this.loop = true,
+    this.amountPerRow
   });
 }

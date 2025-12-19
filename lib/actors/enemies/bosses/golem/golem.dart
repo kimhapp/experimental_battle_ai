@@ -1,8 +1,12 @@
+import 'package:experimental_battle_ai/actors/enemies/bosses/golem/bullet.dart';
+import 'package:experimental_battle_ai/actors/enemies/bosses/golem/laser.dart';
 import 'package:experimental_battle_ai/actors/enemies/enemy.dart';
+import 'package:experimental_battle_ai/actors/projectile.dart';
 import 'package:experimental_battle_ai/actors/state.dart';
 import 'package:experimental_battle_ai/experimental_battle.dart';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flame/effects.dart';
 
 enum GolemAnimationState { idle, glow, shoot, shootLaser, melee, ironBody, stasis, death }
 
@@ -27,6 +31,9 @@ class Golem extends Enemy {
   late final State ironBody;  
   late final State stasis;
 
+  final Vector2 _bulletPoint = Vector2(73, 37);
+  final Vector2 _laserPoint = Vector2(52, 33);
+
   @override
   void onLoad() {
     super.onLoad();
@@ -40,12 +47,20 @@ class Golem extends Enemy {
   }
 
   @override
+  void onMount() {
+    super.onMount();
+    scale = Vector2.all(2);
+    speed = 200;
+    setState(idle);
+  }
+
+  @override
   void loadAnimations() {
     idleAnimation = game.createSpriteAnimation(
       'actors/enemies/bosses/golem(100x100)/idle.png', 
       AnimationConfig(
         amount: 4, 
-        stepTime: 0.2, 
+        stepTime: 0.3, 
         textureSize: Vector2.all(100)
       )
     );
@@ -73,7 +88,8 @@ class Golem extends Enemy {
       AnimationConfig(
         amount: 7, 
         stepTime: 0.2, 
-        textureSize: Vector2.all(100)
+        textureSize: Vector2.all(100),
+        loop: false
       )
     );
 
@@ -89,7 +105,7 @@ class Golem extends Enemy {
     ironBodyAnimation = game.createSpriteAnimation(
       'actors/enemies/bosses/golem(100x100)/iron_body.png', 
       AnimationConfig(
-        amount: 10, 
+        amount: 10,   
         stepTime: 0.2, 
         textureSize: Vector2.all(100)
       )
@@ -126,24 +142,53 @@ class Golem extends Enemy {
 
   @override
   void loadStates() {
-    idle.onEnter = () {
+    idle    
+    ..onEnter = () {
       if (current != GolemAnimationState.idle) setAnimationState(GolemAnimationState.idle);
-    };
+    }
+    ..onUpdate = (dt) {
+      if (stateCountdown != null) {
+        stateCountdown!.update(dt);
+        if (stateCountdown!.finished) setState(follow);
+      }
+    }
+    ..onExit = () => stateCountdown = null;
 
-    follow.onEnter = () {
+    follow
+    ..onEnter = () {
       if (current != GolemAnimationState.idle) setAnimationState(GolemAnimationState.idle);
+    }
+    ..onUpdate = (dt) {
+      followMovementUpdate(dt);
     };
 
     shoot = State('shoot',
       onEnter: () {
-        setAnimationState(GolemAnimationState.shoot);
+        setAnimationState(GolemAnimationState.shoot,
+          onFrames: {
+            8: () {
+              add(Bullet(
+                position: _bulletPoint, player: player
+              ));
+            }
+          }
+        );
       },
     );
 
     shootLaser = State('shoot laser',
       onEnter: () {
-        setAnimationState(GolemAnimationState.shootLaser);
+        setAnimationState(GolemAnimationState.shootLaser,
+          onStart: () {
+            add(Laser(
+              position: _laserPoint, 
+              player: player,
+              onComplete: () => setState(idle)
+            ));
+          },
+        );
       },
+      onExit: () => stateCountdown = Timer(1)
     );
 
     melee  = State('melee',
@@ -175,7 +220,11 @@ class Golem extends Enemy {
 
   @override
   void onCollideWithHitbox(Set<Vector2> intersectionPoints, PositionComponent other) {
-    // TODO: implement onCollideWithHitbox
+    if (other.parent is Projectile) {
+          print('collided!');
+      add(OpacityEffect.fadeOut(
+        EffectController(duration: 0.25, reverseDuration: 0.25),
+      ));
+    }
   }
-  
 }

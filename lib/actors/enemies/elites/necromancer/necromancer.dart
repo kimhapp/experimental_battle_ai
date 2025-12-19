@@ -45,7 +45,7 @@ class Necromancer extends Enemy {
   void onMount() {
     super.onMount();
     speed = 200;
-    setState(castFromSky);
+    setState(follow);
   }
 
   @override
@@ -101,7 +101,7 @@ class Necromancer extends Enemy {
     hurtAnimation = game.createSpriteAnimation(
       'actors/enemies/elites/necromancer(128x128)/hurt.png', 
       AnimationConfig(
-        amount: 9, 
+        amount: 5, 
         stepTime: 0.2, 
         textureSize: Vector2.all(128)
       )
@@ -129,6 +129,7 @@ class Necromancer extends Enemy {
 
   @override
   void loadStates() {
+    // TODO: connect state
     idle
     ..onEnter = () { 
       setAnimationState(NecromancerAnimationState.idle);
@@ -195,7 +196,7 @@ class Necromancer extends Enemy {
     );
 
     hurt.onEnter = () {
-
+      setAnimationState(NecromancerAnimationState.hurt);
     };
 
     death.onEnter = () {

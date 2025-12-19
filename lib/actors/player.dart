@@ -2,6 +2,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:experimental_battle_ai/actors/actor.dart';
+import 'package:experimental_battle_ai/actors/projectile.dart';
 import 'package:experimental_battle_ai/actors/state.dart';
 import 'package:experimental_battle_ai/experimental_battle.dart';
 import 'package:flame/collisions.dart';
@@ -45,6 +46,8 @@ class Player extends Actor {
 
   late final State move;
   late final State roll;
+
+  final Timer attackInterval = Timer(1, autoStart: false);
 
   @override
   void onLoad() {
@@ -184,6 +187,7 @@ class Player extends Actor {
     super.update(dt);
     updatePlayerControl();
     updateCursorPosition();
+    attackInterval.update(dt);
   }
 
   @override
@@ -228,6 +232,11 @@ class Player extends Actor {
 
         cursor.angle = cursorAngle;
         cursor.position = Vector2(size.x / 2, size.y / 2) + cursorOffset;
+      }
+
+      if (!attackInterval.isRunning()) {
+        add(Projectile(position: cursor.position, direction: cursorDirection));
+        attackInterval.start();
       }
     }
   }
