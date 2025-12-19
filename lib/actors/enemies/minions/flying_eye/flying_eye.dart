@@ -1,5 +1,6 @@
 import 'package:experimental_battle_ai/actors/enemies/enemy.dart';
 import 'package:experimental_battle_ai/actors/enemies/minions/flying_eye/heal.dart';
+import 'package:experimental_battle_ai/actors/projectile.dart';
 import 'package:experimental_battle_ai/actors/state.dart';
 import 'package:experimental_battle_ai/experimental_battle.dart';
 import 'package:flame/collisions.dart';
@@ -26,8 +27,9 @@ class FlyingEye extends Enemy {
 
   bool _biteLeap = false;
   bool _dash = false;
+  bool _hasTakeHit = false;
 
-  double biteDistance = 50;
+  double biteDistance = 20;
   double biteDistanceMultiplier = 2;
   
   double dashDistance = 200;
@@ -52,7 +54,7 @@ class FlyingEye extends Enemy {
   @override
   void onMount() {
     super.onMount();
-    setState(idle);
+    setState(follow);
     speed = 200;
   }
 
@@ -138,7 +140,6 @@ class FlyingEye extends Enemy {
 
   @override
   void loadStates() {
-    // TODO: Connect the state 
     idle
     ..onEnter = () {
       if (current != FlyingEyeAnimationState.flight) setAnimationState(FlyingEyeAnimationState.flight);
@@ -158,14 +159,11 @@ class FlyingEye extends Enemy {
     ..onUpdate = (dt) {
       followMovementUpdate(dt);
       
-      if (distance(player) < biteDistance) {
-        setState(bite);
-        return;
-      }
+      if (distance(player) < biteDistance) return setState(bite);
 
-      if (attackCooldown.finished) {
-        if (dashCooldown.finished) return setState(dash);
-        if (healCooldown.finished) return setState(heal);
+      if (!attackCooldown.isRunning()) {
+        if (_hasTakeHit && !healCooldown.isRunning()) return setState(heal);
+        return setState(dash);
       }
     };
 
@@ -229,11 +227,31 @@ class FlyingEye extends Enemy {
           },
         );
       },
+      onExit: () {
+        attackCooldown.start();
+        healCooldown.start();
+        stateCountdown = Timer(1);
+      }
     );
+
+    hurt.onEnter = () {
+      setAnimationState(FlyingEyeAnimationState.hurt,
+        onComplete: () => setState(follow)
+      );
+    };
+
+    death.onEnter = () {
+      setAnimationState(FlyingEyeAnimationState.death,
+        onComplete: () => removeFromParent()
+      );
+    };
   }
 
   @override
   void onCollideWithHitbox(Set<Vector2> intersectionPoints, PositionComponent other) {
-    
+    if (other.parent is Projectile) {
+      setState(hurt);
+      _hasTakeHit = true;
+    }
   }
 }

@@ -2,6 +2,8 @@ import 'package:experimental_battle_ai/actors/actor.dart';
 import 'package:experimental_battle_ai/actors/player.dart';
 import 'package:experimental_battle_ai/actors/state.dart';
 import 'package:flame/components.dart';
+import 'package:flame/text.dart';
+import 'package:flutter/material.dart' hide State;
 
 enum EnemyType { minion, elite, boss }
 
@@ -25,6 +27,17 @@ abstract class Enemy extends Actor {
     totalCount++;
     _typeCounts[template.type] = (_typeCounts[template.type] ?? 0) + 1;
     _enemyCounts[template.id] = (_enemyCounts[template.id] ?? 0) + 1;
+    _stateText = TextComponent(
+      text: '',
+      textRenderer: TextPaint(
+        style: const TextStyle(
+          fontSize: 12,
+          color: Colors.white,
+          shadows: [Shadow(color: Colors.black, blurRadius: 2)],
+        ),
+      ),
+      anchor: Anchor.center,
+    );
   }
 
   static int totalCount = 0;
@@ -40,6 +53,21 @@ abstract class Enemy extends Actor {
 
   final State follow = State('follow');
   Timer? stateCountdown;
+
+  late final TextComponent _stateText;
+  
+  @override
+  void onLoad() {
+    super.onLoad();
+    add(_stateText);
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+
+    _stateText.position = Vector2(size.x / 2, 0);
+  }
   
   @override
   void onRemove() {
@@ -47,6 +75,18 @@ abstract class Enemy extends Actor {
     totalCount--;
     _typeCounts[template.type] = _typeCounts[template.type]! > 0 ? _typeCounts[template.type]! - 1 : 0;
     _enemyCounts[template.id] = _enemyCounts[template.id]! > 0 ? _enemyCounts[template.id]! - 1 : 0;
+  }
+
+  @override
+  void setState(State newState) {
+    updateStateText(newState.name);
+    super.setState(newState);
+  }
+
+  void updateStateText(String stateName) {
+    if (_stateText.text != stateName) {
+      _stateText.text = stateName;
+    }
   }
 
   void followMovementUpdate(double dt) {

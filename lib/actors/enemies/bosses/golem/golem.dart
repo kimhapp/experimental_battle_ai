@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:experimental_battle_ai/actors/enemies/bosses/golem/bullet.dart';
 import 'package:experimental_battle_ai/actors/enemies/bosses/golem/laser.dart';
 import 'package:experimental_battle_ai/actors/enemies/enemy.dart';
@@ -34,6 +36,13 @@ class Golem extends Enemy {
   final Vector2 _bulletPoint = Vector2(73, 37);
   final Vector2 _laserPoint = Vector2(52, 33);
 
+  double meleeDistance = 20;
+  bool _hasIronBody = false;
+  bool _isIronBody = false;
+  int _shield = 3;
+  bool _isInvulnerable = false;
+  Timer attackCooldown = Timer(4, autoStart: false);
+
   @override
   void onLoad() {
     super.onLoad();
@@ -47,11 +56,17 @@ class Golem extends Enemy {
   }
 
   @override
+  void update(double dt) {
+    super.update(dt);
+    attackCooldown.update(dt);
+  }
+
+  @override
   void onMount() {
     super.onMount();
     scale = Vector2.all(2);
     speed = 200;
-    setState(idle);
+    setState(follow);
   }
 
   @override
@@ -79,7 +94,8 @@ class Golem extends Enemy {
       AnimationConfig(
         amount: 9, 
         stepTime: 0.2, 
-        textureSize: Vector2.all(100)
+        textureSize: Vector2.all(100),
+        loop: false
       )
     );
 
@@ -98,7 +114,8 @@ class Golem extends Enemy {
       AnimationConfig(
         amount: 7, 
         stepTime: 0.2, 
-        textureSize: Vector2.all(100)
+        textureSize: Vector2.all(100),
+        loop: false
       )
     );
 
@@ -107,7 +124,8 @@ class Golem extends Enemy {
       AnimationConfig(
         amount: 10,   
         stepTime: 0.2, 
-        textureSize: Vector2.all(100)
+        textureSize: Vector2.all(100),
+        loop: false
       )
     );
 
@@ -116,16 +134,18 @@ class Golem extends Enemy {
       AnimationConfig(
         amount: 8, 
         stepTime: 0.2, 
-        textureSize: Vector2.all(100)
+        textureSize: Vector2.all(100),
+        loop: false
       )
     );
 
     deathAnimation = game.createSpriteAnimation(
-      'actors/enemies/elites/necromancer(128x128)/death.png', 
+      'actors/enemies/bosses/golem(100x100)/death.png', 
       AnimationConfig(
         amount: 14, 
         stepTime: 0.2, 
-        textureSize: Vector2.all(100)
+        textureSize: Vector2.all(100),
+        loop: false
       )
     );
 
@@ -135,6 +155,7 @@ class Golem extends Enemy {
       GolemAnimationState.shoot: shootAnimation,
       GolemAnimationState.shootLaser: shootLaserAnimation,
       GolemAnimationState.melee: meleeAnimation,
+      GolemAnimationState.ironBody: ironBodyAnimation,
       GolemAnimationState.stasis: stasisAnimation,
       GolemAnimationState.death: deathAnimation,
     };
@@ -149,7 +170,10 @@ class Golem extends Enemy {
     ..onUpdate = (dt) {
       if (stateCountdown != null) {
         stateCountdown!.update(dt);
-        if (stateCountdown!.finished) setState(follow);
+        if (stateCountdown!.finished) {
+          if (_isIronBody && !_hasIronBody) return setState(ironBody);
+          setState(follow);
+        } 
       }
     }
     ..onExit = () => stateCountdown = null;
@@ -160,6 +184,18 @@ class Golem extends Enemy {
     }
     ..onUpdate = (dt) {
       followMovementUpdate(dt);
+
+      if (distance(player) < meleeDistance) return setState(melee);
+
+      if (!attackCooldown.isRunning()) {
+        final random = Random().nextDouble();
+
+        if (random < 0.7) {
+          setState(shoot);
+        } else {
+          setState(shootLaser);
+        }
+      }
     };
 
     shoot = State('shoot',
@@ -171,9 +207,14 @@ class Golem extends Enemy {
                 position: _bulletPoint, player: player
               ));
             }
-          }
+          },
+          onComplete: () => setState(idle)
         );
       },
+      onExit: () {
+        attackCooldown.start();
+        stateCountdown = Timer(1);
+      }
     );
 
     shootLaser = State('shoot laser',
@@ -188,24 +229,39 @@ class Golem extends Enemy {
           },
         );
       },
-      onExit: () => stateCountdown = Timer(1)
+      onExit: () {
+        attackCooldown.start();
+        stateCountdown = Timer(1);
+      }
     );
 
     melee  = State('melee',
       onEnter: () {
-        setAnimationState(GolemAnimationState.melee);
+        setAnimationState(GolemAnimationState.melee,
+          onComplete: () => setState(idle)
+        );
       },
+      onExit: () => stateCountdown = Timer(1)
     );
 
     ironBody = State('iron body',
       onEnter: () {
-        setAnimationState(GolemAnimationState.ironBody);
+        _hasIronBody = true;
+        setAnimationState(GolemAnimationState.ironBody,
+          onComplete: () { 
+            _isInvulnerable = false;
+            setState(follow);
+          }
+        );
       },
     );
 
     stasis = State('stasis',
       onEnter: () {
-        setAnimationState(GolemAnimationState.stasis);
+        _isIronBody = false;
+        setAnimationState(GolemAnimationState.stasis,
+          onComplete: () => _isInvulnerable = false,
+        );
       },
     );
 
@@ -214,17 +270,41 @@ class Golem extends Enemy {
     };
 
     death.onEnter = () {
-      setAnimationState(GolemAnimationState.death);
+      setAnimationState(GolemAnimationState.death,
+        onComplete: () { 
+          game.gameHud.isBossAlive = false;
+          removeFromParent();
+        }
+      );
     };
   }
 
   @override
   void onCollideWithHitbox(Set<Vector2> intersectionPoints, PositionComponent other) {
-    if (other.parent is Projectile) {
-          print('collided!');
-      add(OpacityEffect.fadeOut(
-        EffectController(duration: 0.25, reverseDuration: 0.25),
-      ));
+    if (other.parent is Projectile && !_isInvulnerable && currentState != death) {
+      if (currentState != stasis) {
+        _isInvulnerable = true;
+
+        if (!_isIronBody) {
+          _isIronBody = true;
+          stateCountdown = Timer(1);
+          setState(idle);
+        } else {
+          _shield--;
+
+          if (_shield <= 0) return setState(stasis);
+        }
+        
+        add(OpacityEffect.fadeOut(
+          EffectController(
+            duration: 0.5, 
+            reverseDuration: 0.5,
+            onMax: () =>  _isInvulnerable = false
+        )));
+      }
+      else {
+        return setState(death);
+      }
     }
   }
 }

@@ -1,4 +1,3 @@
-import 'package:experimental_battle_ai/actors/enemies/bosses/golem/golem.dart';
 import 'package:experimental_battle_ai/actors/player.dart';
 import 'package:experimental_battle_ai/game_hud.dart';
 import 'package:flame/components.dart';
@@ -84,7 +83,6 @@ class GameWorld extends World with HasGameReference<ExperimentalBattle> {
         '- Tileset images not found or paths incorrect in TMX file'
       );
     }
-    debugMode = true;
   }
 
   void _spawningObjects() {
@@ -95,8 +93,6 @@ class GameWorld extends World with HasGameReference<ExperimentalBattle> {
         switch (spawnPoint.class_) {
           case "player":
             player.position = spawnPoint.position;
-            Golem golem = Golem(player: player)..position = player.position - Vector2.all(100);
-            add(golem);
             add(player);
             break;
         }

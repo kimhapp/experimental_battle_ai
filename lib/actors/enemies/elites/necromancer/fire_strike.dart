@@ -8,7 +8,7 @@ class FireStrike extends SpriteAnimationComponent with HasGameReference<Experime
     required this.player
   }): super(anchor: Anchor.bottomCenter);
 
-  final Timer duration = Timer(0.25, autoStart: false);
+  final Timer duration = Timer(0.5, autoStart: false);
   final Player player;
 
   @override

@@ -38,8 +38,6 @@ class Laser extends SpriteAnimationComponent with HasGameReference<ExperimentalB
       )
     );
 
-    print("starting laser!");
-
     animationTicker!.onComplete = () { 
       double targetAngle = angleTo(player.position);
       double currentAngle = angle;
@@ -74,7 +72,6 @@ class Laser extends SpriteAnimationComponent with HasGameReference<ExperimentalB
 
     if (rotateDuration.finished) {
       onComplete.call();
-      print("removing laser!");
       removeFromParent();
     }
   }

@@ -1,7 +1,10 @@
+import 'dart:math';
+
 import 'package:experimental_battle_ai/actors/enemies/elites/necromancer/fire_field.dart';
 import 'package:experimental_battle_ai/actors/enemies/elites/necromancer/fire_strike.dart';
 import 'package:experimental_battle_ai/actors/enemies/elites/necromancer/skull.dart';
 import 'package:experimental_battle_ai/actors/enemies/enemy.dart';
+import 'package:experimental_battle_ai/actors/projectile.dart';
 import 'package:experimental_battle_ai/actors/state.dart';
 import 'package:experimental_battle_ai/experimental_battle.dart';
 import 'package:flame/collisions.dart';
@@ -29,6 +32,8 @@ class Necromancer extends Enemy {
 
   final Vector2 _skullPoint = Vector2(55, 47); // Based on sprite
 
+  Timer attackCooldown = Timer(4, autoStart: false);
+
   @override
   void onLoad() {
     super.onLoad();
@@ -39,6 +44,12 @@ class Necromancer extends Enemy {
     )..onCollisionStartCallback = onCollideWithHitbox;
 
     add(hitbox);
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    attackCooldown.update(dt);
   }
 
   @override
@@ -94,7 +105,7 @@ class Necromancer extends Enemy {
         amount: 13, 
         stepTime: 0.2, 
         textureSize: Vector2.all(128),
-        loop: true
+        loop: false
       )
     );
 
@@ -103,7 +114,8 @@ class Necromancer extends Enemy {
       AnimationConfig(
         amount: 5, 
         stepTime: 0.2, 
-        textureSize: Vector2.all(128)
+        textureSize: Vector2.all(128),
+        loop: false
       )
     );
 
@@ -112,7 +124,8 @@ class Necromancer extends Enemy {
       AnimationConfig(
         amount: 9, 
         stepTime: 0.2, 
-        textureSize: Vector2.all(128)
+        textureSize: Vector2.all(128),
+        loop: false
       )
     );
 
@@ -129,7 +142,6 @@ class Necromancer extends Enemy {
 
   @override
   void loadStates() {
-    // TODO: connect state
     idle
     ..onEnter = () { 
       setAnimationState(NecromancerAnimationState.idle);
@@ -148,6 +160,18 @@ class Necromancer extends Enemy {
     }
     ..onUpdate = (dt) {
       followMovementUpdate(dt);
+
+      if (!attackCooldown.isRunning()) {
+        final random = Random().nextDouble();
+
+        if (random < 0.4) {
+          setState(shoot);
+        } else if (random < 0.7) {
+          setState(castFromSky);
+        } else {
+          setState(castFromGround);
+        }
+      }
     };
 
     shoot = State('shoot',
@@ -160,8 +184,13 @@ class Necromancer extends Enemy {
                 player: player
               ));
             }
-          }
+          },
+          onComplete: () => setState(idle)
         );
+      },
+      onExit: () {
+        attackCooldown.start();
+        stateCountdown = Timer(1);
       }
     );
 
@@ -175,9 +204,14 @@ class Necromancer extends Enemy {
                 player: player
               ));
             }
-          }
+          },
+          onComplete: () => setState(idle)
         );
       },
+      onExit: () {
+        attackCooldown.start();
+        stateCountdown = Timer(1);
+      }
     );
 
     castFromGround = State('cast from ground',
@@ -190,22 +224,31 @@ class Necromancer extends Enemy {
                 player: player
               ));
             }
-          }
+          },
+          onComplete: () => setState(idle)
         );
       },
+      onExit: () {
+        attackCooldown.start();
+        stateCountdown = Timer(1);
+      }
     );
 
     hurt.onEnter = () {
-      setAnimationState(NecromancerAnimationState.hurt);
+      setAnimationState(NecromancerAnimationState.hurt,
+        onComplete: () => setState(follow)
+      );
     };
 
     death.onEnter = () {
-      setAnimationState(NecromancerAnimationState.death);
+      setAnimationState(NecromancerAnimationState.death,
+        onComplete: () => removeFromParent()
+      );
     };
   }
   
   @override
   void onCollideWithHitbox(Set<Vector2> intersectionPoints, PositionComponent other) {
-
+    if (other.parent is Projectile) setState(hurt);
   }
 }
